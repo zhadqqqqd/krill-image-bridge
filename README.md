@@ -36,7 +36,7 @@ Natural-language detection is also enabled by default for explicit requests such
 ## Install extension
 
 ```bash
-git clone <this-repo-url>
+git clone https://github.com/zhadqqqqd/krill-image-bridge.git
 cd krill-image-bridge
 npm run install-extension
 ```

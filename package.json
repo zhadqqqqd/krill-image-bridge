@@ -3,6 +3,10 @@
   "version": "0.1.0",
   "type": "module",
   "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhadqqqqd/krill-image-bridge.git"
+  },
   "scripts": {
     "test": "node --test",
     "start": "node scripts/start-agent.mjs",
