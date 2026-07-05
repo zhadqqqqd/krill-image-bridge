@@ -1,13 +1,15 @@
 # Krill Image Bridge
 
-TauriTavern/SillyTavern extension plus local agent for role-card driven Krill image generation.
+TauriTavern/SillyTavern extension for role-card driven Krill image generation.
 
 ## What it does
 
 - Watches completed assistant messages.
 - Detects explicit image-generation intent from role-card output.
-- Calls a local Krill Agent instead of putting API keys in the browser extension.
-- Inserts generated images back into chat as Markdown image links.
+- Calls a Krill/OpenAI-compatible image API directly from the extension.
+- Inserts generated images back into chat as Markdown data-image links.
+
+No local agent or Mac LAN server is required.
 
 ## Supported triggers
 
@@ -43,48 +45,27 @@ npm run install-extension
 
 Restart TauriTavern after installing. Open the Extensions panel and find "Krill Image Bridge".
 
-## Start local agent on Mac
+## Configure
 
-```bash
-npm start
-```
+Open the extension settings and fill:
 
-By default the agent uses the Codex API key and base URL from `~/.codex`. Override them only when needed:
+- `API Base URL`: defaults to `https://api.krill-ai.com/codex/v1`
+- `API Key`: your Krill/Codex-compatible API key
+- `Krill image model`: defaults to `gpt-image-2`
+- `Quality`: defaults to `high`
 
-```bash
-KRILL_API_KEY='your-key' \
-KRILL_API_BASE='https://api.cdn-krill-ai.com/codex/v1' \
-npm start
-```
-
-Useful environment variables:
-
-- `KRILL_API_KEY`: Krill API key. If omitted, the agent tries Codex `~/.codex/auth.json` first, then TauriTavern's active custom API key from `secrets.json`.
-- `KRILL_API_BASE`: Base URL. If omitted, the agent tries Codex `~/.codex/config.toml` first, then falls back to `https://api.cdn-krill-ai.com/codex/v1`.
-- `KRILL_IMAGE_ENDPOINT`: Full image endpoint override. If set, it overrides `KRILL_API_BASE`.
-- `KRILL_IMAGE_MODEL`: Default image model. Defaults to `gpt-image-2`.
-- `KRILL_IMAGE_QUALITY`: Default image quality. Defaults to `high`.
-- `KRILL_AGENT_HOST`: Defaults to `127.0.0.1`. Use `0.0.0.0` for iPhone/LAN access.
-- `KRILL_AGENT_PORT`: Defaults to `8788`.
-- `KRILL_PUBLIC_BASE_URL`: Public URL returned in Markdown. For iPhone use a Mac LAN URL, for example `http://192.168.1.20:8788`.
-- `KRILL_IMAGE_DIR`: Image output folder. Defaults to `krill-image-bridge/data/images`.
-
-## iPhone quick start
-
-If TauriTavern runs on iPhone and the agent runs on Mac, do not use `127.0.0.1` in generated image URLs. Keep the iPhone and Mac on the same Wi-Fi, then start the agent with LAN mode:
-
-```bash
-npm run start:lan
-```
-
-The command prints an iPhone Agent URL, for example:
+The extension sends requests to:
 
 ```text
-iPhone Agent URL: http://192.168.1.20:8788
+{API Base URL}/images/generations
 ```
 
-Set the extension Agent URL on iPhone to that printed URL and press "Check Agent". If macOS asks about incoming network connections, allow Node.js for the local network.
+## iPhone use
 
-## GitHub install on iPhone
+Install the extension in TauriTavern on iPhone, then enter the API Base URL and API Key in the extension settings. Because there is no agent, the iPhone must be able to reach the image API directly.
 
-This repository is meant to be the source package. For iPhone use, the agent still runs on your Mac because it needs your API key and writes generated images to disk. The iPhone extension only calls the Mac LAN Agent URL and receives Markdown image links.
+If generation fails with a network/CORS error, that means the API endpoint does not allow browser/WebView direct requests. In that case a proxy or agent is technically required by browser security rules.
+
+## Manual command
+
+After configuration, `/krill your image prompt` generates one image and returns Markdown.

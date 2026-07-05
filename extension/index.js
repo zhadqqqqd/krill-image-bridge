@@ -1,10 +1,12 @@
 import { extractImageRequests, buildDedupKey } from './shared/trigger-parser.js';
 import { insertGeneratedImageMarkdown } from './shared/message-insertion.js';
+import { generateDirectImage, resolveImageEndpoint } from './shared/direct-image-api.js';
 
 const EXTENSION_NAME = 'third-party/krill-image-bridge';
 const SETTINGS_KEY = 'krillImageBridge';
 const DEFAULT_SETTINGS = {
-  agentUrl: 'http://127.0.0.1:8788',
+  apiBaseUrl: 'https://api.krill-ai.com/codex/v1',
+  apiKey: '',
   autoDetect: true,
   structured: true,
   naturalLanguage: true,
@@ -12,7 +14,7 @@ const DEFAULT_SETTINGS = {
   functionTool: false,
   mode: 'replace',
   maxRequests: 1,
-  defaultModel: '',
+  defaultModel: 'gpt-image-2',
   defaultRatio: '16:9',
   defaultResolution: '1024x576',
   defaultQuality: 'high',
@@ -48,7 +50,8 @@ async function renderSettings() {
   const container = jQuery('#extensions_settings2').length ? jQuery('#extensions_settings2') : jQuery('#extensions_settings');
   container.append(html);
 
-  bindInput('#krill_bridge_agent_url', 'agentUrl');
+  bindInput('#krill_bridge_api_base_url', 'apiBaseUrl');
+  bindInput('#krill_bridge_api_key', 'apiKey');
   bindInput('#krill_bridge_model', 'defaultModel');
   bindInput('#krill_bridge_ratio', 'defaultRatio');
   bindInput('#krill_bridge_resolution', 'defaultResolution');
@@ -68,7 +71,7 @@ async function renderSettings() {
     await navigator.clipboard.writeText(roleCardContract());
     updateStatus('角色卡生图协议已复制');
   });
-  jQuery('#krill_bridge_health').on('click', checkAgentHealth);
+  jQuery('#krill_bridge_check_config').on('click', checkDirectConfig);
 }
 
 function bindInput(selector, key) {
@@ -142,29 +145,18 @@ async function processAssistantMessage(messageId) {
 }
 
 async function requestImage(request, source) {
-  const endpoint = `${settings.agentUrl.replace(/\/$/, '')}/generate`;
-  const response = await fetch(endpoint, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({
-      prompt: request.prompt,
-      caption: request.caption || 'Krill image',
-      model: settings.defaultModel,
-      ratio: request.ratio || settings.defaultRatio,
-      resolution: settings.defaultResolution,
-      quality: settings.defaultQuality,
-      source,
-    }),
+  return generateDirectImage({
+    prompt: request.prompt,
+    caption: request.caption || 'Krill image',
+    model: settings.defaultModel,
+    ratio: request.ratio || settings.defaultRatio,
+    resolution: settings.defaultResolution,
+    quality: settings.defaultQuality,
+    source,
+  }, {
+    apiBaseUrl: settings.apiBaseUrl,
+    apiKey: settings.apiKey,
   });
-
-  const json = await response.json().catch(() => ({}));
-  if (!response.ok || !json.ok) {
-    throw new Error(json.error || `Agent request failed (${response.status})`);
-  }
-  if (!json.markdown) {
-    throw new Error('Agent response did not include markdown');
-  }
-  return json;
 }
 
 function registerSlashCommand() {
@@ -182,7 +174,7 @@ function registerSlashCommand() {
         }, 'slash-command');
         return result.markdown;
       },
-      helpString: 'Generate an image through the local Krill Image Agent. The command returns Markdown image text.',
+      helpString: 'Generate an image through the configured Krill/OpenAI-compatible image API. The command returns Markdown image text.',
     }));
   } catch (error) {
     console.warn('[Krill Image Bridge] slash command registration skipped:', error);
@@ -225,15 +217,12 @@ function registerFunctionTool() {
   });
 }
 
-async function checkAgentHealth() {
-  try {
-    const response = await fetch(`${settings.agentUrl.replace(/\/$/, '')}/health`);
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
-    const json = await response.json().catch(() => ({}));
-    updateStatus(json.publicBaseUrl ? `Agent 在线：${json.publicBaseUrl}` : 'Agent 在线');
-  } catch (error) {
-    showError(error);
+function checkDirectConfig() {
+  if (!String(settings.apiKey || '').trim()) {
+    updateStatus('请先填写 API Key');
+    return;
   }
+  updateStatus(`直连配置已就绪：${resolveImageEndpoint(settings.apiBaseUrl)}`);
 }
 
 function getMessageText(message) {
@@ -259,7 +248,10 @@ function updateStatus(text) {
 }
 
 function showError(error) {
-  const message = error instanceof Error ? error.message : String(error);
+  let message = error instanceof Error ? error.message : String(error);
+  if (/Failed to fetch|NetworkError|Load failed/i.test(message)) {
+    message = `${message}。如果 iPhone 端报这个错，通常是 API 端 CORS 或网络访问被拦截。`;
+  }
   updateStatus(`错误：${message}`);
   window.toastr?.error?.(message, 'Krill Image Bridge');
   console.error('[Krill Image Bridge]', error);

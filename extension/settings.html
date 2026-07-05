@@ -5,12 +5,15 @@
       <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
     </div>
     <div class="inline-drawer-content">
-      <label for="krill_bridge_agent_url">Agent URL</label>
-      <input id="krill_bridge_agent_url" class="text_pole" type="text" />
-      <small class="krill-bridge-help">iPhone 使用时填 Mac 局域网地址，例如 http://192.168.1.20:8788。Mac 上可运行 npm run start:lan 自动打印。</small>
+      <label for="krill_bridge_api_base_url">API Base URL</label>
+      <input id="krill_bridge_api_base_url" class="text_pole" type="text" />
+
+      <label for="krill_bridge_api_key">API Key</label>
+      <input id="krill_bridge_api_key" class="text_pole" type="password" autocomplete="off" />
+      <small class="krill-bridge-help">纯扩展模式会从 TauriTavern/iPhone 端直接请求生图接口，不需要本地 agent。</small>
 
       <label for="krill_bridge_model">Krill image model</label>
-      <input id="krill_bridge_model" class="text_pole" type="text" placeholder="optional; falls back to agent env" />
+      <input id="krill_bridge_model" class="text_pole" type="text" placeholder="gpt-image-2" />
 
       <div class="krill-bridge-row">
         <label for="krill_bridge_ratio">Ratio</label>
@@ -62,7 +65,7 @@
       <input id="krill_bridge_max_requests" class="text_pole" type="number" min="1" max="4" />
 
       <div class="krill-bridge-actions">
-        <button id="krill_bridge_health" class="menu_button" type="button">Check Agent</button>
+        <button id="krill_bridge_check_config" class="menu_button" type="button">Check Config</button>
         <button id="krill_bridge_copy_contract" class="menu_button" type="button">Copy Role-Card Contract</button>
       </div>
       <small id="krill_bridge_status">Krill Image Bridge 未检查</small>

@@ -1,4 +1,4 @@
-import { cp, mkdir, rm } from 'node:fs/promises';
+import { cp, mkdir, readdir, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
@@ -15,7 +15,9 @@ await cp(join(root, 'extension'), target, { recursive: true });
 
 await rm(join(target, 'shared'), { recursive: true, force: true });
 await mkdir(join(target, 'shared'), { recursive: true });
-await cp(join(root, 'src/shared/trigger-parser.js'), join(target, 'shared/trigger-parser.js'));
-await cp(join(root, 'src/shared/message-insertion.js'), join(target, 'shared/message-insertion.js'));
+for (const filename of await readdir(join(root, 'src/shared'))) {
+  if (!filename.endsWith('.js') || filename.endsWith('.test.js')) continue;
+  await cp(join(root, 'src/shared', filename), join(target, 'shared', filename));
+}
 
 console.log(`Installed Krill Image Bridge extension to ${target}`);
