@@ -29,3 +29,12 @@ test('root extension script includes a polling fallback for missed chat events',
   assert.match(script, /setInterval/);
   assert.match(script, /failedUntil/);
 });
+
+test('root extension defaults cover multi-image role-card messages', async () => {
+  const script = await readFile(join(root, 'index.js'), 'utf8');
+
+  assert.match(script, /settingsVersion:\s*4/);
+  assert.match(script, /maxRequests:\s*3/);
+  assert.match(script, /mode:\s*'replace'/);
+  assert.match(script, /defaultModel:\s*'gpt-image-2'/);
+});

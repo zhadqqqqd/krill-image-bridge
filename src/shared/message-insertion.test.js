@@ -1,6 +1,9 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { insertGeneratedImageMarkdown } from './message-insertion.js';
+import {
+  insertGeneratedImageMarkdown,
+  resolveInsertionMode,
+} from './message-insertion.js';
 
 test('replaces structured marker with markdown in replace mode', () => {
   const original = '看这里：<krill_image>prompt: gate</krill_image>';
@@ -31,4 +34,8 @@ test('append mode always appends', () => {
   });
 
   assert.equal(result, 'hello\n\n![image](http://127.0.0.1/image.png)');
+});
+
+test('asset tags are always replaced even when global mode is append', () => {
+  assert.equal(resolveInsertionMode({ kind: 'asset-tag' }, 'append'), 'replace');
 });

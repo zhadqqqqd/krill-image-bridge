@@ -13,3 +13,8 @@ export function insertGeneratedImageMarkdown(originalText, {
 
   return `${text.replace(/\s+$/g, '')}\n\n${imageMarkdown}`;
 }
+
+export function resolveInsertionMode(request, configuredMode = 'replace') {
+  if (request?.kind === 'asset-tag') return 'replace';
+  return configuredMode || 'replace';
+}

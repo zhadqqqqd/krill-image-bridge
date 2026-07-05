@@ -1,5 +1,5 @@
 import { extractImageRequests, buildDedupKey } from './shared/trigger-parser.js';
-import { insertGeneratedImageMarkdown } from './shared/message-insertion.js';
+import { insertGeneratedImageMarkdown, resolveInsertionMode } from './shared/message-insertion.js';
 import { generateDirectImage, resolveImageEndpoint } from './shared/direct-image-api.js';
 import { getEventTypes, recentMessageIds, resolveMessageIdsFromEvent } from './shared/event-routing.js';
 
@@ -8,7 +8,7 @@ const SETTINGS_KEY = 'krillImageBridge';
 const DEFAULT_SETTINGS = {
   apiBaseUrl: 'https://api.krill-ai.com/codex/v1',
   apiKey: '',
-  settingsVersion: 3,
+  settingsVersion: 4,
   autoDetect: true,
   interactiveUserRequests: true,
   structured: true,
@@ -16,7 +16,7 @@ const DEFAULT_SETTINGS = {
   sfwTags: true,
   functionTool: true,
   mode: 'replace',
-  maxRequests: 1,
+  maxRequests: 3,
   defaultModel: 'gpt-image-2',
   defaultRatio: '16:9',
   defaultResolution: '1024x576',
@@ -44,11 +44,14 @@ function loadSettings() {
   context.extensionSettings[SETTINGS_KEY] ||= {};
   const stored = context.extensionSettings[SETTINGS_KEY];
   const migrated = { ...DEFAULT_SETTINGS, ...stored };
-  if (Number(stored.settingsVersion || 0) < 3) {
+  if (Number(stored.settingsVersion || 0) < 4) {
     migrated.interactiveUserRequests = true;
     migrated.sfwTags = true;
     migrated.functionTool = true;
-    migrated.settingsVersion = 3;
+    if (!Number(stored.maxRequests) || Number(stored.maxRequests) < 3) migrated.maxRequests = 3;
+    if (stored.mode === 'append') migrated.mode = 'replace';
+    if (!stored.defaultModel || stored.defaultModel === 'wan2.7-image') migrated.defaultModel = 'gpt-image-2';
+    migrated.settingsVersion = 4;
     context.extensionSettings[SETTINGS_KEY] = { ...migrated };
     context.saveSettingsDebounced?.();
   }
@@ -178,7 +181,7 @@ async function processMessage(messageId, { allowUser = false } = {}) {
       const updatedText = insertGeneratedImageMarkdown(getMessageText(message), {
         raw: request.raw,
         markdown: result.markdown,
-        mode: settings.mode,
+        mode: resolveInsertionMode(request, settings.mode),
       });
 
       message.mes = updatedText;
