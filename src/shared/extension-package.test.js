@@ -9,6 +9,8 @@ test('GitHub extension package exposes manifest at repository root', async () =>
   const manifest = JSON.parse(await readFile(join(root, 'manifest.json'), 'utf8'));
 
   assert.equal(manifest.display_name, 'Krill Image Bridge');
+  assert.deepEqual(manifest.requires, []);
+  assert.deepEqual(manifest.optional, []);
   assert.equal(manifest.js, 'index.js');
   assert.equal(manifest.css, 'style.css');
   await access(join(root, manifest.js));
