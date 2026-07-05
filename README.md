@@ -69,3 +69,14 @@ If generation fails with a network/CORS error, that means the API endpoint does 
 ## Manual command
 
 After configuration, `/krill your image prompt` generates one image and returns Markdown.
+
+You can also use `/krill-scan` to force-scan recent messages if a role card has already emitted an image request tag.
+
+## Auto generation
+
+The extension listens to both assistant messages and user messages:
+
+- Assistant/role-card output containing `<krill_image>...</krill_image>`, `<image_prompt>...</image_prompt>`, `[GENERATE_IMAGE: ...]`, `{{image: ...}}`, `<SFW_IMG>...</SFW_IMG>`, or `<NSFW_IMG>...</NSFW_IMG>` is converted into an image.
+- User messages such as "画一张..." or "generate an image of..." can also trigger generation when the interactive user-request setting is enabled.
+
+For model tool calling, keep "Register optional function tool" enabled and make sure TauriTavern's tool/function calling is enabled for your chat completion source.

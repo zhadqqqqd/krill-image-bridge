@@ -1,17 +1,20 @@
 import { extractImageRequests, buildDedupKey } from './shared/trigger-parser.js';
 import { insertGeneratedImageMarkdown } from './shared/message-insertion.js';
 import { generateDirectImage, resolveImageEndpoint } from './shared/direct-image-api.js';
+import { getEventTypes, recentMessageIds, resolveMessageIdsFromEvent } from './shared/event-routing.js';
 
 const EXTENSION_NAME = 'third-party/krill-image-bridge';
 const SETTINGS_KEY = 'krillImageBridge';
 const DEFAULT_SETTINGS = {
   apiBaseUrl: 'https://api.krill-ai.com/codex/v1',
   apiKey: '',
+  settingsVersion: 3,
   autoDetect: true,
+  interactiveUserRequests: true,
   structured: true,
   naturalLanguage: true,
-  sfwTags: false,
-  functionTool: false,
+  sfwTags: true,
+  functionTool: true,
   mode: 'replace',
   maxRequests: 1,
   defaultModel: 'gpt-image-2',
@@ -37,7 +40,17 @@ jQuery(async () => {
 
 function loadSettings() {
   context.extensionSettings[SETTINGS_KEY] ||= {};
-  return { ...DEFAULT_SETTINGS, ...context.extensionSettings[SETTINGS_KEY] };
+  const stored = context.extensionSettings[SETTINGS_KEY];
+  const migrated = { ...DEFAULT_SETTINGS, ...stored };
+  if (Number(stored.settingsVersion || 0) < 3) {
+    migrated.interactiveUserRequests = true;
+    migrated.sfwTags = true;
+    migrated.functionTool = true;
+    migrated.settingsVersion = 3;
+    context.extensionSettings[SETTINGS_KEY] = { ...migrated };
+    context.saveSettingsDebounced?.();
+  }
+  return migrated;
 }
 
 function persistSettings() {
@@ -58,6 +71,7 @@ async function renderSettings() {
   bindInput('#krill_bridge_quality', 'defaultQuality');
   bindNumber('#krill_bridge_max_requests', 'maxRequests');
   bindCheckbox('#krill_bridge_auto_detect', 'autoDetect');
+  bindCheckbox('#krill_bridge_interactive_user_requests', 'interactiveUserRequests');
   bindCheckbox('#krill_bridge_structured', 'structured');
   bindCheckbox('#krill_bridge_natural_language', 'naturalLanguage');
   bindCheckbox('#krill_bridge_sfw_tags', 'sfwTags');
@@ -96,15 +110,40 @@ function bindCheckbox(selector, key) {
 }
 
 function registerMessageListener() {
-  context.eventSource.on(context.eventTypes.MESSAGE_RECEIVED, (messageId) => {
-    if (!settings.autoDetect) return;
-    window.setTimeout(() => processAssistantMessage(Number(messageId)), 0);
-  });
+  const eventTypes = getEventTypes(context);
+  const on = (eventName, handler) => {
+    if (!eventName || !context.eventSource?.on) return;
+    context.eventSource.on(eventName, handler);
+  };
+
+  on(eventTypes.MESSAGE_RECEIVED, (payload) => scheduleProcessEvent(payload, { allowUser: false }));
+  on(eventTypes.CHARACTER_MESSAGE_RENDERED, (payload) => scheduleProcessEvent(payload, { allowUser: false }));
+  on(eventTypes.MESSAGE_SENT, (payload) => scheduleProcessEvent(payload, { allowUser: true }));
+  on(eventTypes.USER_MESSAGE_RENDERED, (payload) => scheduleProcessEvent(payload, { allowUser: true }));
+  on(eventTypes.GENERATION_ENDED, () => scheduleRecentScan());
+  updateStatus(`Krill Image Bridge 监听已启用：${Object.keys(eventTypes).length || 'unknown'} events`);
 }
 
-async function processAssistantMessage(messageId) {
+function scheduleProcessEvent(payload, options) {
+  if (!settings.autoDetect) return;
+  window.setTimeout(() => {
+    const ids = resolveMessageIdsFromEvent(payload);
+    const targets = ids.length ? ids : recentMessageIds(context.chat, 3);
+    targets.forEach((messageId) => processMessage(messageId, options));
+  }, 120);
+}
+
+function scheduleRecentScan() {
+  if (!settings.autoDetect) return;
+  window.setTimeout(() => {
+    recentMessageIds(context.chat, 4).forEach((messageId) => processMessage(messageId, { allowUser: false }));
+  }, 300);
+}
+
+async function processMessage(messageId, { allowUser = false } = {}) {
   const message = context.chat?.[messageId];
-  if (!message || message.is_user || message.is_system) return;
+  if (!message || message.is_system) return;
+  if (message.is_user && (!allowUser || !settings.interactiveUserRequests)) return;
 
   const sourceText = getMessageText(message);
   const requests = extractImageRequests(sourceText, {
@@ -122,7 +161,7 @@ async function processAssistantMessage(messageId) {
     inFlight.add(key);
     try {
       updateStatus(`正在生成图片：${request.prompt.slice(0, 40)}`);
-      const result = await requestImage(request, 'assistant-message');
+      const result = await requestImage(request, message.is_user ? 'user-message' : 'assistant-message');
       const updatedText = insertGeneratedImageMarkdown(getMessageText(message), {
         raw: request.raw,
         markdown: result.markdown,
@@ -135,7 +174,7 @@ async function processAssistantMessage(messageId) {
       context.updateMessageBlock(messageId, message);
       await context.saveChat();
       processed.add(key);
-      updateStatus('图片已插入聊天');
+      updateStatus(`图片已插入聊天：message ${messageId}`);
     } catch (error) {
       showError(error);
     } finally {
@@ -176,6 +215,15 @@ function registerSlashCommand() {
       },
       helpString: 'Generate an image through the configured Krill/OpenAI-compatible image API. The command returns Markdown image text.',
     }));
+    context.SlashCommandParser.addCommandObject(context.SlashCommand.fromProps({
+      name: 'krill-scan',
+      callback: async () => {
+        const ids = recentMessageIds(context.chat, 6);
+        ids.forEach((messageId) => processMessage(messageId, { allowUser: true }));
+        return `Krill Image Bridge scanned ${ids.length} recent messages.`;
+      },
+      helpString: 'Scan recent chat messages for Krill image request tags and generate matching images.',
+    }));
   } catch (error) {
     console.warn('[Krill Image Bridge] slash command registration skipped:', error);
   }
@@ -209,10 +257,10 @@ function registerFunctionTool() {
     },
     action: async ({ prompt, caption = 'Krill image', ratio = settings.defaultRatio }) => {
       const result = await requestImage({ prompt, caption, ratio, raw: prompt }, 'function-tool');
-      return JSON.stringify({ markdown: result.markdown, url: result.url, prompt });
+      return result.markdown;
     },
     formatMessage: ({ prompt }) => `Generating Krill image: ${prompt}`,
-    shouldRegister: () => Boolean(settings.functionTool && context.isToolCallingSupported?.()),
+    shouldRegister: () => Boolean(settings.functionTool),
     stealth: false,
   });
 }

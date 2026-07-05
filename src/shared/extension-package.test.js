@@ -17,6 +17,7 @@ test('GitHub extension package exposes manifest at repository root', async () =>
   await access(join(root, manifest.css));
   await access(join(root, 'settings.html'));
   await access(join(root, 'shared/direct-image-api.js'));
+  await access(join(root, 'shared/event-routing.js'));
   await access(join(root, 'shared/message-insertion.js'));
   await access(join(root, 'shared/trigger-parser.js'));
 });
