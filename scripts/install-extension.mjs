@@ -11,13 +11,15 @@ const target = join(
 
 await rm(target, { recursive: true, force: true });
 await mkdir(target, { recursive: true });
-await cp(join(root, 'extension'), target, { recursive: true });
+for (const filename of ['manifest.json', 'index.js', 'settings.html', 'style.css']) {
+  await cp(join(root, filename), join(target, filename));
+}
 
 await rm(join(target, 'shared'), { recursive: true, force: true });
 await mkdir(join(target, 'shared'), { recursive: true });
-for (const filename of await readdir(join(root, 'src/shared'))) {
+for (const filename of await readdir(join(root, 'shared'))) {
   if (!filename.endsWith('.js') || filename.endsWith('.test.js')) continue;
-  await cp(join(root, 'src/shared', filename), join(target, 'shared', filename));
+  await cp(join(root, 'shared', filename), join(target, 'shared', filename));
 }
 
 console.log(`Installed Krill Image Bridge extension to ${target}`);
