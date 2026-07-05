@@ -21,3 +21,11 @@ test('GitHub extension package exposes manifest at repository root', async () =>
   await access(join(root, 'shared/message-insertion.js'));
   await access(join(root, 'shared/trigger-parser.js'));
 });
+
+test('root extension script includes a polling fallback for missed chat events', async () => {
+  const script = await readFile(join(root, 'index.js'), 'utf8');
+
+  assert.match(script, /registerPollingScanner/);
+  assert.match(script, /setInterval/);
+  assert.match(script, /failedUntil/);
+});

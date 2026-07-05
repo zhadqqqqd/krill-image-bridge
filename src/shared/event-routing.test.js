@@ -7,12 +7,16 @@ import {
 } from './event-routing.js';
 
 test('getEventTypes supports SillyTavern event_types and legacy eventTypes', () => {
-  assert.deepEqual(getEventTypes({ event_types: { MESSAGE_RECEIVED: 'message_received' } }), {
-    MESSAGE_RECEIVED: 'message_received',
-  });
-  assert.deepEqual(getEventTypes({ eventTypes: { MESSAGE_RECEIVED: 'legacy' } }), {
-    MESSAGE_RECEIVED: 'legacy',
-  });
+  assert.equal(getEventTypes({ event_types: { MESSAGE_RECEIVED: 'message_received' } }).MESSAGE_RECEIVED, 'message_received');
+  assert.equal(getEventTypes({ eventTypes: { MESSAGE_RECEIVED: 'legacy' } }).MESSAGE_RECEIVED, 'legacy');
+});
+
+test('getEventTypes falls back to SillyTavern event names when context omits them', () => {
+  const eventTypes = getEventTypes({});
+
+  assert.equal(eventTypes.MESSAGE_RECEIVED, 'message_received');
+  assert.equal(eventTypes.MESSAGE_SENT, 'message_sent');
+  assert.equal(eventTypes.GENERATION_ENDED, 'generation_ended');
 });
 
 test('resolveMessageIdsFromEvent accepts numeric and object payloads', () => {

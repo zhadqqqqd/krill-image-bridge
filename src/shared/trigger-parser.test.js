@@ -55,6 +55,15 @@ test('ignores SFW_IMG tags unless compatibility mode is enabled', () => {
   assert.equal(extractImageRequests(text, { sfwTags: true })[0].kind, 'asset-tag');
 });
 
+test('converts role-card SFW_IMG asset paths into useful generation prompts', () => {
+  const text = '<SFW_IMG>宗主虞清寒/虞清寒面无表情/13.jpg</SFW_IMG>';
+  const [request] = extractImageRequests(text, { sfwTags: true });
+
+  assert.equal(request.prompt, '宗主虞清寒, 虞清寒面无表情, xianxia character illustration');
+  assert.equal(request.caption, 'SFW_IMG');
+  assert.equal(request.raw, text);
+});
+
 test('limits extracted requests', () => {
   const text = '<krill_image>prompt: one</krill_image><krill_image>prompt: two</krill_image>';
 

@@ -27,12 +27,14 @@ let context;
 let settings;
 const inFlight = new Set();
 const processed = new Set();
+const failedUntil = new Map();
 
 jQuery(async () => {
   context = SillyTavern.getContext();
   settings = loadSettings();
   await renderSettings();
   registerMessageListener();
+  registerPollingScanner();
   registerSlashCommand();
   registerFunctionTool();
   updateStatus('Krill Image Bridge 已加载');
@@ -140,6 +142,16 @@ function scheduleRecentScan() {
   }, 300);
 }
 
+function registerPollingScanner() {
+  window.setInterval(() => {
+    if (!settings.autoDetect || !Array.isArray(context.chat)) return;
+    recentMessageIds(context.chat, 6).forEach((messageId) => {
+      processMessage(messageId, { allowUser: true });
+    });
+  }, 2500);
+  updateStatus('Krill Image Bridge 轮询兜底已启用');
+}
+
 async function processMessage(messageId, { allowUser = false } = {}) {
   const message = context.chat?.[messageId];
   if (!message || message.is_system) return;
@@ -156,7 +168,8 @@ async function processMessage(messageId, { allowUser = false } = {}) {
 
   for (const request of requests) {
     const key = buildDedupKey(context.chatId, messageId, request.raw);
-    if (processed.has(key) || inFlight.has(key) || wasProcessed(message, key)) continue;
+    const retryAt = failedUntil.get(key) || 0;
+    if (processed.has(key) || inFlight.has(key) || wasProcessed(message, key) || Date.now() < retryAt) continue;
 
     inFlight.add(key);
     try {
@@ -174,8 +187,10 @@ async function processMessage(messageId, { allowUser = false } = {}) {
       context.updateMessageBlock(messageId, message);
       await context.saveChat();
       processed.add(key);
+      failedUntil.delete(key);
       updateStatus(`图片已插入聊天：message ${messageId}`);
     } catch (error) {
+      failedUntil.set(key, Date.now() + 120000);
       showError(error);
     } finally {
       inFlight.delete(key);

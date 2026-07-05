@@ -84,17 +84,36 @@ function extractNaturalLanguage(text) {
 }
 
 function extractAssetTags(text) {
-  return [...text.matchAll(/<(SFW_IMG|NSFW_IMG)>([\s\S]*?)<\/\1>/gi)].map((match) => ({
-    kind: 'asset-tag',
-    prompt: match[2].trim(),
-    caption: match[1],
-    ratio: '',
-    raw: match[0],
-  }));
+  return [...text.matchAll(/<(SFW_IMG|NSFW_IMG)>([\s\S]*?)<\/\1>/gi)].map((match) => {
+    const tag = match[1];
+    const path = match[2].trim();
+    return {
+      kind: 'asset-tag',
+      prompt: assetPathToPrompt(path),
+      caption: tag,
+      ratio: '',
+      raw: match[0],
+    };
+  });
 }
 
 function cleanPrompt(value) {
   return String(value || '').replace(/[。！？.!?]+$/g, '').trim();
+}
+
+function assetPathToPrompt(value) {
+  const cleaned = String(value || '')
+    .replace(/\\/g, '/')
+    .replace(/\.(?:jpe?g|png|webp|gif)$/i, '')
+    .trim();
+  const parts = cleaned
+    .split('/')
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .filter((part) => !/^\d+$/.test(part) && !/^\[\d+(?:-\d+)?\]$/.test(part));
+
+  if (parts.length === 0) return cleaned;
+  return `${parts.join(', ')}, xianxia character illustration`;
 }
 
 function hashString(value) {

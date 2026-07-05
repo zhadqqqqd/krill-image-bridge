@@ -1,5 +1,16 @@
+const DEFAULT_EVENT_TYPES = {
+  MESSAGE_RECEIVED: 'message_received',
+  CHARACTER_MESSAGE_RENDERED: 'character_message_rendered',
+  MESSAGE_SENT: 'message_sent',
+  USER_MESSAGE_RENDERED: 'user_message_rendered',
+  GENERATION_ENDED: 'generation_ended',
+};
+
 export function getEventTypes(context = {}) {
-  return context.event_types || context.eventTypes || {};
+  return {
+    ...DEFAULT_EVENT_TYPES,
+    ...(context.event_types || context.eventTypes || {}),
+  };
 }
 
 export function resolveMessageIdsFromEvent(payload) {
