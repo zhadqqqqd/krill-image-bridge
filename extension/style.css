@@ -1,0 +1,30 @@
+.krill-bridge-settings .inline-drawer-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.krill-bridge-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(120px, 2fr);
+  gap: 8px;
+  align-items: center;
+}
+
+.krill-bridge-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+#krill_bridge_status {
+  opacity: 0.8;
+  word-break: break-word;
+}
+
+.krill-bridge-help {
+  opacity: 0.75;
+  line-height: 1.4;
+  word-break: break-word;
+}

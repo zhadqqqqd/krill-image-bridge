@@ -1,0 +1,71 @@
+<div id="krill_image_bridge_settings" class="krill-bridge-settings">
+  <div class="inline-drawer">
+    <div class="inline-drawer-toggle inline-drawer-header">
+      <b>Krill Image Bridge</b>
+      <div class="inline-drawer-icon fa-solid fa-circle-chevron-down down"></div>
+    </div>
+    <div class="inline-drawer-content">
+      <label for="krill_bridge_agent_url">Agent URL</label>
+      <input id="krill_bridge_agent_url" class="text_pole" type="text" />
+      <small class="krill-bridge-help">iPhone 使用时填 Mac 局域网地址，例如 http://192.168.1.20:8788。Mac 上可运行 npm run start:lan 自动打印。</small>
+
+      <label for="krill_bridge_model">Krill image model</label>
+      <input id="krill_bridge_model" class="text_pole" type="text" placeholder="optional; falls back to agent env" />
+
+      <div class="krill-bridge-row">
+        <label for="krill_bridge_ratio">Ratio</label>
+        <select id="krill_bridge_ratio">
+          <option value="1:1">1:1</option>
+          <option value="4:3">4:3</option>
+          <option value="3:4">3:4</option>
+          <option value="16:9">16:9</option>
+          <option value="9:16">9:16</option>
+        </select>
+      </div>
+
+      <label for="krill_bridge_resolution">Resolution</label>
+      <input id="krill_bridge_resolution" class="text_pole" type="text" placeholder="1024x576" />
+
+      <label for="krill_bridge_quality">Quality</label>
+      <input id="krill_bridge_quality" class="text_pole" type="text" placeholder="high" />
+
+      <div class="krill-bridge-row">
+        <label for="krill_bridge_mode">Insert mode</label>
+        <select id="krill_bridge_mode">
+          <option value="replace">Replace marker</option>
+          <option value="append">Append below message</option>
+        </select>
+      </div>
+
+      <label class="checkbox_label">
+        <input id="krill_bridge_auto_detect" type="checkbox" />
+        Auto-detect assistant image requests
+      </label>
+      <label class="checkbox_label">
+        <input id="krill_bridge_structured" type="checkbox" />
+        Detect structured tags
+      </label>
+      <label class="checkbox_label">
+        <input id="krill_bridge_natural_language" type="checkbox" />
+        Detect natural-language requests
+      </label>
+      <label class="checkbox_label">
+        <input id="krill_bridge_sfw_tags" type="checkbox" />
+        Treat SFW_IMG / NSFW_IMG as generation requests
+      </label>
+      <label class="checkbox_label">
+        <input id="krill_bridge_function_tool" type="checkbox" />
+        Register optional function tool
+      </label>
+
+      <label for="krill_bridge_max_requests">Max images per assistant message</label>
+      <input id="krill_bridge_max_requests" class="text_pole" type="number" min="1" max="4" />
+
+      <div class="krill-bridge-actions">
+        <button id="krill_bridge_health" class="menu_button" type="button">Check Agent</button>
+        <button id="krill_bridge_copy_contract" class="menu_button" type="button">Copy Role-Card Contract</button>
+      </div>
+      <small id="krill_bridge_status">Krill Image Bridge 未检查</small>
+    </div>
+  </div>
+</div>

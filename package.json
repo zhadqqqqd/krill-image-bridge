@@ -1,0 +1,12 @@
+{
+  "name": "krill-image-bridge",
+  "version": "0.1.0",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "test": "node --test",
+    "start": "node scripts/start-agent.mjs",
+    "start:lan": "node scripts/start-agent.mjs --lan",
+    "install-extension": "node scripts/install-extension.mjs"
+  }
+}

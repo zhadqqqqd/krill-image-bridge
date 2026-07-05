@@ -1,0 +1,11 @@
+{
+  "display_name": "Krill Image Bridge",
+  "loading_order": 50,
+  "js": "index.js",
+  "css": "style.css",
+  "author": "zz/Codex",
+  "version": "0.1.0",
+  "homePage": "https://docs.sillytavern.app/for-contributors/writing-extensions/",
+  "auto_update": false,
+  "minimum_client_version": "1.0.0"
+}
